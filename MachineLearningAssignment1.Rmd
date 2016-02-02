@@ -1,0 +1,84 @@
+---
+title: "MachineLearningAssingment1"
+author: "eujo007"
+date: "February 1, 2016"
+output: html_document
+---
+
+# Executive Summary
+The following analysis examines the data captured from wearable accelerometers and try to predict if the participants are performing exercises correctly. For each record in the data set an outcome is assigned in the range of letters from A through E. I will use the provided training set and random forest to create a model to apply against the provided test set to make predictions on the test set 
+
+```{r, echo=FALSE}
+## Make sure all needed libraries are available and loaded and download and save the assignment training and test data
+availPackages<- .packages(all.available = TRUE)
+isAvail <- availPackages[] == "caret"  ## Check to see of GGally is loaded
+if(!(sum(isAvail) >0))
+{
+    install.packages("caret")
+    
+}
+library(caret)
+
+isAvail <- availPackages[] == "ggplot2"  ## Check to see of GGally is loaded
+if(!(sum(isAvail) >0))
+{
+    install.packages("ggplot2")
+    
+}
+library(ggplot2)
+
+trainingUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+setwd("~/coursera/machineLearning")
+if(!file.exists("trainingSet.csv") || !file.exists("testSet.csv") )
+{
+    download.file(trainingUrl,"./trainingSet.csv",method = "curl")
+    download.file(testUrl,"./testSet.csv",method = "curl")
+}
+
+trainingSet <- read.csv("trainingSet.csv")
+testSet <- read.csv("testSet.csv")
+```
+
+## Data Pre Processing
+In this section we examine the training and test data sets to understand the data composition and to determine what variables should be used for the model.
+```{r, echo=FALSE}
+str(trainingSet)
+```
+
+### Cleanup
+From the str() output we see that there are 160 variables and 19622 records. To reduce the number of variables I will use nearZeroVar function to identify those variables that have little to zero contribution to the outcome. In addition I will remove X, user_name, all time related variables and variables that have NA values for the following reasons:
+- X, user_name: These variables help identify a record but are not measurements
+- timestamp data: I am not performing any type of time series analysis
+- NA variables: variables that are NA will cause the predict function to fail
+- Remove the factor variables since they can cause the model to explode in the number of terms. Each factor level, except the classe, could result in a new term in our model as learned in Regression. There are some factors with a low number of levels but most are over 10 with some being over 300
+```{r}
+nearZeroAnalysis <- nearZeroVar(trainingSet, saveMetrics = TRUE)
+print(head(nearZeroAnalysis,20))
+print("Number of variables we can throw out: "); print(sum(nearZeroAnalysis$nzv))
+allVariables <- row.names(nearZeroAnalysis)
+varsToKeep <- allVariables[!nearZeroAnalysis$nzv]
+trainingSet2<- subset(trainingSet, select=  varsToKeep ) ## This data set represents a training set with the least userful/variable variables removed
+str(trainingSet2)
+## Remove X, user_name and the time related variables
+trainingSet2 <- subset(trainingSet2, select=-c(X,user_name,cvtd_timestamp,raw_timestamp_part_2,raw_timestamp_part_1))
+
+## Next I remove columns that are full of NAs since when we predict with the model these columns will cause predict to fail. Note that I chose not to use impute because the columns with NA seem to be mostly if not all NA. Impute would try to calculate values based on nearest neighboors of specific variable value but most of the other values are also NA
+trainingSet2 <- trainingSet2[,colSums(is.na(trainingSet2))==0]
+mostlyNotNA <- trainingSet2[,colSums(is.na(trainingSet2))/19622<.3] ## Capture columns/variables where at least 70% of the observations are not NA 
+print(length(names(trainingSet2)))
+print(length(names(mostlyNotNA)))
+```
+
+### Create the model and predict values based on the testSet
+```{r}
+## Build the model using the caret train function.
+## N.B. Based on slide 10 from the random forest lecture from week 3, Cross Validation is handled by the caret train function
+weightModelFit <- train(classe ~., data = trainingSet2, method="rf", na.action = na.omit)
+weightModelFit$finalModel
+pred <- predict(weightModelFit,testSet)
+print(pred) ## The values I will put into the exercise quiz
+```
+
+### Summary
+In summary I described above why I trimmed the original data set. I then used the caret train function with method random forest to generate the model. The train method from caret handles Cross Validation internally therefore I did not explicitly write code to perform CV. The expected Out of Sample Error cannot be calculated becuase the test set does not have the actual values for the outcome. However, Accuracy from the final model is extremely high. Based on the results I submitted to the quiz I expect the out of sample error to be extremely low since I got 20/20 correct. In addition the print out of the final model above shows that the error rates were very low for the analysis.
