@@ -74,11 +74,14 @@ print(length(names(mostlyNotNA)))
 ```{r}
 ## Build the model using the caret train function.
 ## N.B. Based on slide 10 from the random forest lecture from week 3, Cross Validation is handled by the caret train function
-weightModelFit <- train(classe ~., data = trainingSet2, method="rf", na.action = na.omit)
+controls <- trainControl(method ="cv")
+weightModelFit <- train(classe ~., data = trainingSet2, method="rf", ntree=100, trControl = controls, na.action = na.omit)
 weightModelFit$finalModel
 pred <- predict(weightModelFit,testSet)
 print(pred) ## The values I will put into the exercise quiz
+print("Estimated Out of Sample Error")
+print(1-weightModelFit$results[2,2])
 ```
 
 ### Summary
-In summary I described above why I trimmed the original data set. I then used the caret train function with method random forest to generate the model. The train method from caret handles Cross Validation internally therefore I did not explicitly write code to perform CV. The expected Out of Sample Error cannot be calculated becuase the test set does not have the actual values for the outcome. However, Accuracy from the final model is extremely high. Based on the results I submitted to the quiz I expect the out of sample error to be extremely low since I got 20/20 correct. In addition the print out of the final model above shows that the error rates were very low for the analysis.
+In summary I described above why I trimmed the original data set. I then used the caret train function with method random forest to generate the model. I passed the cross validation train control so that Cross Validation was handled internally therefore I did not explicitly write code to perform CV. The Out of Sample Error is estimated to be 0.13%. Based on the results I submitted to the quiz I would expect the out of sample error to be extremely low since I got 20/20 correct.

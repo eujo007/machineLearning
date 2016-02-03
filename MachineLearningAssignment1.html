@@ -325,7 +325,8 @@ print(length(names(trainingSet2)))</code></pre>
 <h3>Create the model and predict values based on the testSet</h3>
 <pre class="r"><code>## Build the model using the caret train function.
 ## N.B. Based on slide 10 from the random forest lecture from week 3, Cross Validation is handled by the caret train function
-weightModelFit &lt;- train(classe ~., data = trainingSet2, method=&quot;rf&quot;, na.action = na.omit)</code></pre>
+controls &lt;- trainControl(method =&quot;cv&quot;)
+weightModelFit &lt;- train(classe ~., data = trainingSet2, method=&quot;rf&quot;, ntree=100, trControl = controls, na.action = na.omit)</code></pre>
 <pre><code>## Loading required package: randomForest</code></pre>
 <pre><code>## randomForest 4.6-12</code></pre>
 <pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
@@ -337,27 +338,31 @@ weightModelFit &lt;- train(classe ~., data = trainingSet2, method=&quot;rf&quot;
 <pre class="r"><code>weightModelFit$finalModel</code></pre>
 <pre><code>## 
 ## Call:
-##  randomForest(x = x, y = y, mtry = param$mtry) 
+##  randomForest(x = x, y = y, ntree = 100, mtry = param$mtry) 
 ##                Type of random forest: classification
-##                      Number of trees: 500
+##                      Number of trees: 100
 ## No. of variables tried at each split: 27
 ## 
 ##         OOB estimate of  error rate: 0.16%
 ## Confusion matrix:
 ##      A    B    C    D    E  class.error
-## A 5578    1    0    0    1 0.0003584229
-## B    7 3787    2    1    0 0.0026336582
-## C    0    5 3416    1    0 0.0017533606
-## D    0    0    8 3207    1 0.0027985075
-## E    0    0    0    4 3603 0.0011089548</code></pre>
+## A 5578    2    0    0    0 0.0003584229
+## B    8 3787    2    0    0 0.0026336582
+## C    0    5 3417    0    0 0.0014611338
+## D    0    0   10 3205    1 0.0034203980
+## E    0    1    0    3 3603 0.0011089548</code></pre>
 <pre class="r"><code>pred &lt;- predict(weightModelFit,testSet)
 print(pred) ## The values I will put into the exercise quiz</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
+<pre class="r"><code>print(&quot;Estimated Out of Sample Error&quot;)</code></pre>
+<pre><code>## [1] &quot;Estimated Out of Sample Error&quot;</code></pre>
+<pre class="r"><code>print(1-weightModelFit$results[2,2])</code></pre>
+<pre><code>## [1] 0.001477877</code></pre>
 </div>
 <div id="summary" class="section level3">
 <h3>Summary</h3>
-<p>In summary I described above why I trimmed the original data set. I then used the caret train function with method random forest to generate the model. The train method from caret handles Cross Validation internally therefore I did not explicitly write code to perform CV. The expected Out of Sample Error cannot be calculated becuase the test set does not have the actual values for the outcome. However, Accuracy from the final model is extremely high. Based on the results I submitted to the quiz I expect the out of sample error to be extremely low since I got 20/20 correct. In addition the print out of the final model above shows that the error rates were very low for the analysis.</p>
+<p>In summary I described above why I trimmed the original data set. I then used the caret train function with method random forest to generate the model. I passed the cross validation train control so that Cross Validation was handled internally therefore I did not explicitly write code to perform CV. The Out of Sample Error is estimated to be 0.13%. Based on the results I submitted to the quiz I would expect the out of sample error to be extremely low since I got 20/20 correct.</p>
 </div>
 </div>
 </div>
